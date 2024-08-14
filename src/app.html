@@ -15,7 +15,7 @@
         color: rgb(51,51,51);/*HEX: 333*/
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 20px;
+        padding: 20px 20px 0 20px;
         box-sizing: border-box;
       }
 
@@ -116,6 +116,24 @@
       .content textarea::-webkit-scrollbar-thumb:hover {
           background-color: rgba(31, 31, 31, .24);
       }
+      
+      /* Style the footer */
+      .footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 12px;
+          height: 20px;
+          color: rgb(136,136,136);/*HEX: 888*/
+      }
+      .footer-left {
+          flex: 1;
+          text-align: left;
+      }
+      .footer-right {
+          flex: 1;
+          text-align: right;
+      }
 
       /* Dark mode styles */
       .container.dark {
@@ -172,6 +190,10 @@
       <div class="content">
         <textarea id="note-content" placeholder="Some text..."></textarea>
       </div>
+      <footer class="footer">
+        <span class="footer-left">Note ID: <span id="note-id"></span></span>
+        <span class="footer-right">Updated at: <span id="time-updated-at"></span></span>
+      </footer>
     </div>
     <script>
       const isCompressHashedDataGlobal = true;
@@ -181,6 +203,11 @@
       const toggle = document.getElementById('toggle');
       const noteTitle = document.getElementById('note-title');
       const noteContent = document.getElementById('note-content');
+      const noteUUID = document.getElementById('note-id');
+      const noteUpdatedAt = document.getElementById('time-updated-at');
+      
+      let uuid = null;
+      let updatedAt = null;
       
       toggle.addEventListener('change', function() {
         ['dark'].map( v => container.classList.toggle(v, this.checked) );
@@ -189,6 +216,18 @@
       noteTitle.addEventListener('input', function() {
         document.title = this.value || 'Note...';
       });
+      
+      function renderUUID() {
+        if (uuid) {
+          noteUUID.innerHTML = uuid;
+        }
+      }
+      
+      function renderUpdatedAt() {
+        if (updatedAt) {
+          noteUpdatedAt.innerHTML = (new Date(updatedAt)).toLocaleString('en-CA', { hour12: false });
+        }
+      }
       
       async function zipData(data) {
         // SRC: https://dev.to/ternentdotdev/json-compression-in-the-browser-with-gzip-and-the-compression-streams-api-4135
@@ -255,12 +294,21 @@
           encodedContent = btoa(encodeURIComponent(noteContent.value));
         }
         
+        if (Object.is(uuid, null)) {
+          uuid = Math.floor(1*10e12 + Math.random() * 9*10e12);
+          renderUUID();
+        }
+        
+        updatedAt = Date.now();
+        
         const s = hashDataSeparatorSymbol;
         const isThemeDark = toggle.checked ? 1 : 0;
         const hashSymbol = String.fromCharCode(35);
-        const hashData = `${isThemeDark}${s}${isDataZipped}${s}${encodedTitle}${s}${encodedContent}`;
+        const hashData = `${isThemeDark}${s}${isDataZipped}${s}${uuid}${s}${updatedAt}${s}${encodedTitle}${s}${encodedContent}`;
 
         history.replaceState(undefined, '', hashSymbol + hashData);
+        
+        renderUpdatedAt();
       }
       
       async function applyHashData() {
@@ -273,21 +321,23 @@
 
         const dataParts = hash.split(hashDataSeparatorSymbol);
 
-        if (dataParts.length !== 4) {
+        if (dataParts.length !== 6) {
           return; // Invalid hash data format
         }
 
         // Decode and apply data
         const isThemeDark = parseInt(dataParts[0], 10);
         const isDataZipped = parseInt(dataParts[1], 10);
+        uuid = dataParts[2];
+        updatedAt = parseInt(dataParts[3], 10);
         let decodedTitle = '';
         let decodedContent = '';
         if (isDataZipped) {
-          decodedTitle = await unzipData(dataParts[2]);
-          decodedContent = await unzipData(dataParts[3]);
+          decodedTitle = await unzipData(dataParts[4]);
+          decodedContent = await unzipData(dataParts[5]);
         } else {
-          decodedTitle = atob(dataParts[2]);
-          decodedContent = atob(dataParts[3]);
+          decodedTitle = atob(dataParts[4]);
+          decodedContent = atob(dataParts[5]);
         }
 
         toggle.checked = isThemeDark === 1;
@@ -296,6 +346,9 @@
         toggle.dispatchEvent(new CustomEvent("change"));
         noteTitle.dispatchEvent(new CustomEvent("input"));
         noteContent.dispatchEvent(new CustomEvent("input"));
+        
+        renderUUID();
+        renderUpdatedAt();
       }
       
       // Variable to store the timeout reference
