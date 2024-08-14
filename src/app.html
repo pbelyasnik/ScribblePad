@@ -174,6 +174,8 @@
       </div>
     </div>
     <script>
+      const isCompressHashedDataGlobal = true;
+      const hashDataSeparatorSymbol = ',';
       const body = document.body;
       const container = document.querySelector('.container');
       const toggle = document.getElementById('toggle');
@@ -187,18 +189,81 @@
       noteTitle.addEventListener('input', function() {
         document.title = this.value || 'Note...';
       });
+      
+      async function zipData(data) {
+        // SRC: https://dev.to/ternentdotdev/json-compression-in-the-browser-with-gzip-and-the-compression-streams-api-4135
+        // Convert text to Stream
+        const stream = new Blob([data], { type: 'text/plain' }).stream();
+        // gzip stream
+        const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+        // create Response
+        const compressedResponse = await new Response(compressedStream);
+        // Get response Blob
+        const compressedBlob = await compressedResponse.blob();
+        // Get the ArrayBuffer
+        const buffer = await compressedBlob.arrayBuffer();
+        
+        // convert ArrayBuffer to base64 encoded string
+        const compressedBase64 = btoa(
+          String.fromCharCode(
+            ...new Uint8Array(buffer)
+          )
+        );
+        
+        return compressedBase64;
+      }
+      
+      async function unzipData(compressedBase64) {
+        const binaryString = atob(compressedBase64);
+        const buffer = new Uint8Array(binaryString.length);
+        
+        for (let i = 0; i < binaryString.length; i++) {
+          buffer[i] = binaryString.charCodeAt(i);
+        }
+        
+        // base64 encoding to Blob
+        const stream = new Blob([buffer], { type: 'application/octet-stream' }).stream();
+        // piping our data through the gzip DecompressionStream
+        const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+        // create Response
+        const decompressedResponse = await new Response(decompressedStream);
+        // read decompressed stream as blob
+        const decompressedBlob = await decompressedResponse.blob();
+        // get the content back in string format
+        const decompressedData = await decompressedBlob.text();
+        
+        return decompressedData;
+      }
 
-      function updateHash() {
-        const theme = toggle.checked ? 1 : 0;
-        const encodedTitle = btoa(encodeURIComponent(noteTitle.value));
-        const encodedContent = btoa(encodeURIComponent(noteContent.value));
+      async function updateHash() {
+        let encodedTitle = '';
+        let encodedContent = '';
+        let isDataZipped = 0;
+        
+        if (isCompressHashedDataGlobal) {
+          try {
+            encodedTitle = await zipData(encodeURIComponent(noteTitle.value));
+            encodedContent = await zipData(encodeURIComponent(noteContent.value));
+            isDataZipped = 1;
+          } catch (error) {
+            console.warn('Data compression not supported. Storing data unzipped. ', error);
+          }
+        }
+        
+        if (!isDataZipped) {
+          encodedTitle = btoa(encodeURIComponent(noteTitle.value));
+          encodedContent = btoa(encodeURIComponent(noteContent.value));
+        }
+        
+        const s = hashDataSeparatorSymbol;
+        const isThemeDark = toggle.checked ? 1 : 0;
         const hashSymbol = String.fromCharCode(35);
-        const hashData = `${theme},${encodedTitle},${encodedContent}`;
+        const hashData = `${isThemeDark}${s}${isDataZipped}${s}${encodedTitle}${s}${encodedContent}`;
 
         history.replaceState(undefined, '', hashSymbol + hashData);
       }
       
-      function applyHashData() {
+      async function applyHashData() {
         // Get hash data from URL
         const hash = window.location.hash.substring(1);
 
@@ -206,18 +271,26 @@
           return; // No hash data present
         }
 
-        const dataParts = hash.split(',');
+        const dataParts = hash.split(hashDataSeparatorSymbol);
 
-        if (dataParts.length !== 3) {
+        if (dataParts.length !== 4) {
           return; // Invalid hash data format
         }
 
         // Decode and apply data
-        const theme = parseInt(dataParts[0], 10);
-        const decodedTitle = atob(dataParts[1]);
-        const decodedContent = atob(dataParts[2]);
+        const isThemeDark = parseInt(dataParts[0], 10);
+        const isDataZipped = parseInt(dataParts[1], 10);
+        let decodedTitle = '';
+        let decodedContent = '';
+        if (isDataZipped) {
+          decodedTitle = await unzipData(dataParts[2]);
+          decodedContent = await unzipData(dataParts[3]);
+        } else {
+          decodedTitle = atob(dataParts[2]);
+          decodedContent = atob(dataParts[3]);
+        }
 
-        toggle.checked = theme === 1;
+        toggle.checked = isThemeDark === 1;
         noteTitle.value = decodeURIComponent(decodedTitle);
         noteContent.value = decodeURIComponent(decodedContent);
         toggle.dispatchEvent(new CustomEvent("change"));
