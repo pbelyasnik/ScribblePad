@@ -1,0 +1,230 @@
+<html>
+  <head>
+    <title>Note</title>
+    <meta charset="UTF-8">
+    <meta name="description" content=" Web app for taking notes with autosave feature">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+    <style>
+      /* Style the container element */
+      .container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        min-height: 100vh;
+        background-color: rgb(248,248,248);/*HEX: f8f8f8*/
+        color: rgb(51,51,51);/*HEX: 333*/
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      /* Style the switch element */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 20px;
+      }
+
+      /* Style the switch lever */
+      .switch .slider {
+        position: absolute;
+        cursor: pointer;
+        width: 55px;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgb(204,204,204);/*HEX: ccc*/
+        transition: .4s;
+        border-radius: 12px;
+      }
+
+      .switch .slider:before {
+        content: "";
+        position: absolute;
+        width: 36px;
+        height: 20px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 12px;
+      }
+
+      /* Style the switch when checked */
+      .switch input[type="checkbox"]:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      /* Style the header element */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      /* Style the note title input */
+      .header input[type="text"] {
+        width: 100%;
+        margin-right: 15px;
+        box-sizing: border-box;
+      }
+
+      /* Style the text area */
+      .content {
+        flex: 1;
+      }
+
+      .content textarea {
+        width: 100%;
+        height: calc(100vh - 100px);
+        resize: none;
+      }
+      
+      .header input[type="text"],
+      .content textarea {
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid rgb(204,204,204);/*HEX: ccc*/
+        border-radius: 4px;
+        outline: none;
+      }
+      
+      .header input[type="text"]:focus,
+      .content textarea:focus {
+        border-color: rgb(153,153,153);/*HEX: 999*/
+      }
+
+      /* Dark mode styles */
+      .container.dark {
+        background-color: rgb(51,51,51);/*HEX: 333*/
+      }
+
+      .container.dark input[type="text"],
+      .container.dark textarea {
+        background-color: rgb(68,68,68);/*HEX: 444*/
+        border-color: rgb(85,85,85);/*HEX: 555*/
+        color: rgb(238,238,238);/*HEX: eee*/
+      }
+      
+      .container.dark input[type="text"]:focus,
+      .container.dark textarea:focus {
+        border-color:  rgb(119,119,119);/*HEX: 777*/
+      }
+
+      .container.dark .switch .slider {
+        background-color: rgb(85,85,85);/*HEX: 555*/
+      }
+
+      .container.dark .switch input[type="checkbox"]:checked + .slider {
+        background-color: rgb(0,123,255);/*HEX: 007bff*/
+      }
+
+      /* Color transition time */
+      .light, .dark, textarea, input {
+        transition: .2s;
+      }
+
+      /* document reset margins */
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container light">
+      <div class="header">
+        <input type="text" id="note-title" placeholder="Note Title">
+        <label class="switch" title="Light / Dark Theme Switcher">
+          <input type="checkbox" id="toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="content">
+        <textarea id="note-content" placeholder="Some text..."></textarea>
+      </div>
+    </div>
+    <script>
+      const body = document.body;
+      const container = document.querySelector('.container');
+      const toggle = document.getElementById('toggle');
+      const noteTitle = document.getElementById('note-title');
+      const noteContent = document.getElementById('note-content');
+      
+      toggle.addEventListener('change', function() {
+        ['dark'].map( v => container.classList.toggle(v, this.checked) );
+      });
+      
+      noteTitle.addEventListener('input', function() {
+        document.title = this.value || 'Note...';
+      });
+
+      function updateHash() {
+        const theme = toggle.checked ? 1 : 0;
+        const encodedTitle = btoa(encodeURIComponent(noteTitle.value));
+        const encodedContent = btoa(encodeURIComponent(noteContent.value));
+        const hashSymbol = String.fromCharCode(35);
+        const hashData = `${theme},${encodedTitle},${encodedContent}`;
+
+        history.replaceState(undefined, '', hashSymbol + hashData);
+      }
+      
+      function applyHashData() {
+        // Get hash data from URL
+        const hash = window.location.hash.substring(1);
+
+        if (!hash) {
+          return; // No hash data present
+        }
+
+        const dataParts = hash.split(',');
+
+        if (dataParts.length !== 3) {
+          return; // Invalid hash data format
+        }
+
+        // Decode and apply data
+        const theme = parseInt(dataParts[0], 10);
+        const decodedTitle = atob(dataParts[1]);
+        const decodedContent = atob(dataParts[2]);
+
+        toggle.checked = theme === 1;
+        noteTitle.value = decodeURIComponent(decodedTitle);
+        noteContent.value = decodeURIComponent(decodedContent);
+        toggle.dispatchEvent(new CustomEvent("change"));
+        noteTitle.dispatchEvent(new CustomEvent("input"));
+        noteContent.dispatchEvent(new CustomEvent("input"));
+      }
+      
+      // Variable to store the timeout reference
+      let timeoutId = null;
+      // debounce function
+      function debounce(func, delay) {
+        return function (...args) {
+          clearTimeout(timeoutId); // Clear any existing timeout
+          timeoutId = setTimeout(() => {
+            func.apply(this, args); // Call the function with arguments after delay
+          }, delay);
+        };
+      }
+      
+      // Debounced version with 3s delay
+      const debouncedUpdateHash = debounce(updateHash, 3000);
+      
+      toggle.addEventListener('change', debouncedUpdateHash);
+      noteTitle.addEventListener('input', debouncedUpdateHash);
+      noteContent.addEventListener('input', debouncedUpdateHash);
+      
+      // Apply initial data from hash on page load
+      applyHashData();
+      
+      // Set theme based on browser preference (if hash is absent)
+      if (!window.location.hash) {
+        const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+        container.classList.toggle('dark', prefersDark);
+        toggle.checked = prefersDark;
+      }
+    </script>
+  </body>
+</html>
