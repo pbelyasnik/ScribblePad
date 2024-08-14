@@ -95,6 +95,27 @@
       .content textarea:focus {
         border-color: rgb(153,153,153);/*HEX: 999*/
       }
+      
+      /* Scrollbar styling */
+      .content textarea::-webkit-scrollbar {
+          width: 14px;
+      }
+      .content textarea::-webkit-scrollbar-track {
+          background: transparent;
+          border: none;
+      }
+      .content textarea::-webkit-scrollbar-thumb {
+          background-color: rgba(31, 31, 31, .16);
+          background-clip: padding-box;
+          border: 3px solid transparent;
+          border-radius: 8px;
+          box-shadow: none;
+          height: 64px;
+          cursor: default;
+      }
+      .content textarea::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(31, 31, 31, .24);
+      }
 
       /* Dark mode styles */
       .container.dark {
@@ -111,6 +132,13 @@
       .container.dark input[type="text"]:focus,
       .container.dark textarea:focus {
         border-color:  rgb(119,119,119);/*HEX: 777*/
+      }
+      
+      .container.dark textarea::-webkit-scrollbar-thumb {
+          background-color: rgba(227, 227, 227, .16);
+      }
+      .container.dark textarea::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(227, 227, 227, .24);
       }
 
       .container.dark .switch .slider {
