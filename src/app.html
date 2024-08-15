@@ -254,6 +254,10 @@
           return String(value).replaceAll(this._escapeSymbol, "");
         },
 
+        isStoredDataPresent() {
+          return Boolean(window.location.hash.substring(1));
+        },
+
         isTextContentHasBeenChanged() {
           const actualTitle = noteTitle.value || null;
           const actualContent = noteContent.value || null;
@@ -373,11 +377,18 @@
         let updatedAt = Date.now();
 
         if (!helper.isTextContentHasBeenChanged()) {
-          const previousUpdatedAt = getValueFromHash(HashDataKey.UPDATED);
-          if (previousUpdatedAt) {
-            updatedAt = previousUpdatedAt; // in case nothing has been changed in the text fields
+          if (helper.isStoredDataPresent()) {
+            if (isThemeDark !== Number(getValueFromHash(HashDataKey.THEME))) {
+              // for case: the text fields remained unchanged but the theme has been changed
+              // continue standard flow of saving but will keep the same modification date as before
+              updatedAt = getValueFromHash(HashDataKey.UPDATED);
+            } else {
+              // for case: this is an existing note but nothing has been changed, neither text in fields nor theme
+              return;
+            }
           } else {
-            return; // case: this is a new note, nothing to save, just theme switcher was touched
+            // for case: it is a new note, nothing to save, just theme switcher was touched
+            return;
           }
         }
 
@@ -540,11 +551,15 @@
         }
 
         // Debounced version with delay in milliseconds
-        const delayedSerializeDataToHash = debounce(serializeDataToHash, 3000);
+        const delayedSerializeDataToHash = debounce(serializeDataToHash, 5000);
         // Bind DOM Events
         toggle.addEventListener("change", delayedSerializeDataToHash);
         noteTitle.addEventListener("input", delayedSerializeDataToHash);
         noteContent.addEventListener("input", delayedSerializeDataToHash);
+        noteTitle.addEventListener("keydown", delayedSerializeDataToHash);
+        noteContent.addEventListener("keydown", delayedSerializeDataToHash);
+        noteTitle.addEventListener("mouseout", serializeDataToHash);
+        noteContent.addEventListener("mouseout", serializeDataToHash);
 
         toggle.addEventListener("change", darkThemeSwitch);
         noteTitle.addEventListener("input", updateDocumentTitle);
