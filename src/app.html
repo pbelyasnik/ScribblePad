@@ -254,6 +254,19 @@
           return String(value).replaceAll(this._escapeSymbol, "");
         },
 
+        isTextContentHasBeenChanged() {
+          const actualTitle = noteTitle.value || null;
+          const actualContent = noteContent.value || null;
+          const storedTitle = this.storage.titleDecoded || null;
+          const storedContent = this.storage.contentDecoded || null;
+
+          if (storedTitle !== actualTitle || storedContent !== actualContent) {
+            return true;
+          }
+
+          return false;
+        },
+
         metadata: {
           _noteId: null,
           _noteUpdatedAt: null,
@@ -358,6 +371,15 @@
         let isThemeDark = toggle.checked ? 1 : 0;
         let isDataZipped = 0;
         let updatedAt = Date.now();
+
+        if (!helper.isTextContentHasBeenChanged()) {
+          const previousUpdatedAt = getValueFromHash(HashDataKey.UPDATED);
+          if (previousUpdatedAt) {
+            updatedAt = previousUpdatedAt; // in case nothing has been changed in the text fields
+          } else {
+            return; // case: this is a new note, nothing to save, just theme switcher was touched
+          }
+        }
 
         if (isCompressHashedDataGlobal) {
           try {
