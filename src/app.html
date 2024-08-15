@@ -296,7 +296,7 @@
           },
 
           set noteUpdatedAt(value) {
-            this._noteUpdatedAt = parseInt(value, 10);
+            this._noteUpdatedAt = Number(value);
           },
 
           actualize() {
@@ -420,20 +420,20 @@
         helper.renderFooterBlock();
       }
 
-      async function deserializeAndRenderData(data) {
-        // Decode and apply data
-        const isThemeDark = parseInt(data[HashDataKey.THEME], 10);
-        const isDataZipped = parseInt(data[HashDataKey.ZIPPED], 10);
+      async function deserializeAndRenderData() {
+        const storedData = readStoredDataInHash();
+        const isThemeDark = Number(storedData[HashDataKey.THEME]);
+        const isDataZipped = Number(storedData[HashDataKey.ZIPPED]);
 
         let decodedTitle = "";
         let decodedContent = "";
 
         if (isDataZipped) {
-          decodedTitle = await unzipData(data[HashDataKey.TITLE]);
-          decodedContent = await unzipData(data[HashDataKey.CONTENT]);
+          decodedTitle = await unzipData(storedData[HashDataKey.TITLE]);
+          decodedContent = await unzipData(storedData[HashDataKey.CONTENT]);
         } else {
-          decodedTitle = atob(data[HashDataKey.TITLE]);
-          decodedContent = atob(data[HashDataKey.CONTENT]);
+          decodedTitle = atob(storedData[HashDataKey.TITLE]);
+          decodedContent = atob(storedData[HashDataKey.CONTENT]);
         }
 
         toggle.checked = Boolean(isThemeDark);
@@ -536,15 +536,26 @@
         darkThemeSwitch();
       }
 
+      function addMultipleListeners(elements, events, handlers) {
+        elements = Array.isArray(elements) ? elements : [elements];
+        handlers = Array.isArray(handlers) ? handlers : [handlers];
+
+        elements.forEach(element => {
+          events.split(" ").forEach(event => {
+            handlers.forEach(handler => {
+              element.addEventListener(event, handler);
+            });
+          });
+        });
+      }
+
       /**
        * Run the App
        */
-      (function(){
-        const storedData = readStoredDataInHash();
-
-        if (storedData) {
+      (() => {
+        if (helper.isStoredDataPresent()) {
           // Apply initial data from hash on page load
-          deserializeAndRenderData(storedData).then(updateDocumentTitle);
+          deserializeAndRenderData().then(updateDocumentTitle);
         } else {
           // in case if this is the first launch of the app (if hash is absent)
           applySystemTheme();
@@ -553,16 +564,10 @@
         // Debounced version with delay in milliseconds
         const delayedSerializeDataToHash = debounce(serializeDataToHash, 5000);
         // Bind DOM Events
-        toggle.addEventListener("change", delayedSerializeDataToHash);
-        noteTitle.addEventListener("input", delayedSerializeDataToHash);
-        noteContent.addEventListener("input", delayedSerializeDataToHash);
-        noteTitle.addEventListener("keydown", delayedSerializeDataToHash);
-        noteContent.addEventListener("keydown", delayedSerializeDataToHash);
-        noteTitle.addEventListener("mouseout", serializeDataToHash);
-        noteContent.addEventListener("mouseout", serializeDataToHash);
-
-        toggle.addEventListener("change", darkThemeSwitch);
-        noteTitle.addEventListener("input", updateDocumentTitle);
+        addMultipleListeners([noteTitle, noteContent], "input keydown", delayedSerializeDataToHash);
+        addMultipleListeners([noteTitle, noteContent], "mouseout", serializeDataToHash);
+        addMultipleListeners(toggle, "change", [delayedSerializeDataToHash, darkThemeSwitch]);
+        addMultipleListeners(noteTitle, "input", updateDocumentTitle);
       })();
     </script>
   </body>
