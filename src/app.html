@@ -197,57 +197,122 @@
     </div>
     <script>
       const isCompressHashedDataGlobal = true;
-      const hashDataDelimiterSymbol = ',';
-      const hashDataWrapSymbol = '|';
+      const hashDataDelimiterSymbol = ",";
+      const hashDataEscapeSymbol = "|";
 
       const body = document.body;
-      const container = document.querySelector('.container');
-      const toggle = document.getElementById('toggle');
-      const noteTitle = document.getElementById('note-title');
-      const noteContent = document.getElementById('note-content');
-      const noteIdSpan = document.getElementById('note-id');
-      const noteUpdatedAtSpan = document.getElementById('time-updated-at');
+      const container = document.querySelector(".container");
+      const toggle = document.getElementById("toggle");
+      const noteTitle = document.getElementById("note-title");
+      const noteContent = document.getElementById("note-content");
+      const noteIdSpan = document.getElementById("note-id");
+      const noteUpdatedAtSpan = document.getElementById("time-updated-at");
+
+      /**
+       * Enumeration for keys associated with the location of data pieces in the URL hash.
+       * @readonly
+       */
+      const HashDataKey = Object.freeze({
+        THEME: "theme",
+        ZIPPED: "zipped",
+        ID: "id",
+        UPDATED: "updated",
+        TITLE: "title",
+        CONTENT: "content",
+      });
 
       const helper = {
-        _noteId: null,
-        _wrapSymbol: hashDataWrapSymbol,
-
-        get noteId() {
-          if (Object.is(this._noteId, null)) {
-            this.generateId();
-          }
-
-          return this._noteId;
-        },
-
-        set noteId(value) {
-          this._noteId = this.trimValue(value);
-        },
+        _escapeSymbol: hashDataEscapeSymbol,
 
         generateId() {
-          this._noteId = Date.now().toString(); // timestamp, equal to date created
-          this.renderId();
+          this.metadata._noteId = Date.now().toString(); // timestamp, equal to date created
         },
 
-        renderId() {
-          renderNoteId(this._noteId);
+        renderNoteId() {
+          if (this.metadata._noteId) {
+            noteIdSpan.innerHTML = this.metadata._noteId;
+          }
         },
 
-        wrapValue(value) {
-          return `${this._wrapSymbol}${value}${this._wrapSymbol}`;
+        renderUpdatedAtDate() {
+          if (this.metadata._noteUpdatedAt) {
+            noteUpdatedAtSpan.innerHTML = (new Date(this.metadata._noteUpdatedAt)).toLocaleString("en-CA", { hour12: false });
+          }
+        },
+
+        renderFooterBlock() {
+          this.metadata.actualize();
+          this.renderNoteId();
+          this.renderUpdatedAtDate();
+        },
+
+        escapeValue(value) {
+          return `${this._escapeSymbol}${value}${this._escapeSymbol}`;
         },
 
         trimValue(value) {
-          return String(value).replaceAll(this._wrapSymbol, '');
+          return String(value).replaceAll(this._escapeSymbol, "");
+        },
+
+        metadata: {
+          _noteId: null,
+          _noteUpdatedAt: null,
+
+          get noteIdEscaped() {
+            return helper.escapeValue(this.noteId);
+          },
+
+          get noteId() {
+            if (Object.is(this._noteId, null)) {
+              helper.generateId();
+            }
+
+            return this._noteId;
+          },
+
+          set noteId(value) {
+            this._noteId = helper.trimValue(value);
+          },
+
+          get noteUpdatedAt() {
+            return this._noteUpdatedAt;
+          },
+
+          set noteUpdatedAt(value) {
+            this._noteUpdatedAt = parseInt(value, 10);
+          },
+
+          actualize() {
+            this.noteId = getValueFromHash(HashDataKey.ID);
+            this.noteUpdatedAt = getValueFromHash(HashDataKey.UPDATED);
+          },
+        },
+
+        storage: {
+          _titleDecoded: null,
+          _contentDecoded: null,
+
+          get titleDecoded() {
+            return this._titleDecoded;
+          },
+
+          get contentDecoded() {
+            return this._contentDecoded;
+          },
+
+          actualizeData() {
+            this._titleDecoded = noteTitle.value;
+            this._contentDecoded = noteContent.value;
+          },
         },
       };
 
       async function zipData(data) {
         // SRC: https://dev.to/ternentdotdev/json-compression-in-the-browser-with-gzip-and-the-compression-streams-api-4135
         // Convert text to Stream
-        const stream = new Blob([data], { type: 'text/plain' }).stream();
+        const stream = new Blob([data], { type: "text/plain" }).stream();
         // gzip stream
-        const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+        const compressedStream = stream.pipeThrough(new CompressionStream("gzip"));
         // create Response
         const compressedResponse = await new Response(compressedStream);
         // Get response Blob
@@ -274,9 +339,9 @@
         }
 
         // base64 encoding to Blob
-        const stream = new Blob([buffer], { type: 'application/octet-stream' }).stream();
+        const stream = new Blob([buffer], { type: "application/octet-stream" }).stream();
         // piping our data through the gzip DecompressionStream
-        const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+        const decompressedStream = stream.pipeThrough(new DecompressionStream("gzip"));
         // create Response
         const decompressedResponse = await new Response(decompressedStream);
         // read decompressed stream as blob
@@ -288,12 +353,11 @@
       }
 
       async function serializeDataToHash() {
-        const isThemeDark = toggle.checked ? 1 : 0;
-        const updatedAt = Date.now();
-
-        let encodedTitle = '';
-        let encodedContent = '';
+        let encodedTitle = "";
+        let encodedContent = "";
+        let isThemeDark = toggle.checked ? 1 : 0;
         let isDataZipped = 0;
+        let updatedAt = Date.now();
 
         if (isCompressHashedDataGlobal) {
           try {
@@ -301,7 +365,7 @@
             encodedContent = await zipData(encodeURIComponent(noteContent.value));
             isDataZipped = 1;
           } catch (error) {
-            console.warn('Data compression not supported. Storing data unzipped. ', error);
+            console.warn("Data compression not supported. Storing data unzipped. ", error);
           }
         }
         
@@ -311,33 +375,32 @@
         }
         
         writeDataToHash({
-          "title": encodedTitle,
-          "content": encodedContent,
-          "theme": isThemeDark,
-          "zipped": isDataZipped,
-          "id": helper.wrapValue(helper.noteId),
-          "updated": updatedAt,
+          [HashDataKey.TITLE]: encodedTitle,
+          [HashDataKey.CONTENT]: encodedContent,
+          [HashDataKey.THEME]: isThemeDark,
+          [HashDataKey.ZIPPED]: isDataZipped,
+          [HashDataKey.ID]: helper.metadata.noteIdEscaped,
+          [HashDataKey.UPDATED]: updatedAt,
         });
-        
-        renderUpdatedAtDate(updatedAt);
+
+        helper.storage.actualizeData();
+        helper.renderFooterBlock();
       }
       
       async function deserializeAndRenderData(data) {
         // Decode and apply data
-        const isThemeDark = parseInt(data["theme"], 10);
-        const isDataZipped = parseInt(data["zipped"], 10);
+        const isThemeDark = parseInt(data[HashDataKey.THEME], 10);
+        const isDataZipped = parseInt(data[HashDataKey.ZIPPED], 10);
 
-        helper.noteId = data["id"];
-
-        let decodedTitle = '';
-        let decodedContent = '';
+        let decodedTitle = "";
+        let decodedContent = "";
 
         if (isDataZipped) {
-          decodedTitle = await unzipData(data["title"]);
-          decodedContent = await unzipData(data["content"]);
+          decodedTitle = await unzipData(data[HashDataKey.TITLE]);
+          decodedContent = await unzipData(data[HashDataKey.CONTENT]);
         } else {
-          decodedTitle = atob(data["title"]);
-          decodedContent = atob(data["content"]);
+          decodedTitle = atob(data[HashDataKey.TITLE]);
+          decodedContent = atob(data[HashDataKey.CONTENT]);
         }
 
         toggle.checked = Boolean(isThemeDark);
@@ -347,6 +410,9 @@
         if (toggle.checked) {
           darkThemeSwitch();
         }
+
+        helper.storage.actualizeData();
+        helper.renderFooterBlock();
       }
 
       function readStoredDataInHash() {
@@ -365,20 +431,20 @@
 
         const hashData = mapStructure(data).join(hashDataDelimiterSymbol);
 
-        history.replaceState(undefined, '', hashSymbol + hashData);
+        history.replaceState(undefined, "", hashSymbol + hashData);
       }
 
       /**
-       * return: Array | Object | null
+       * @return: Array | Object | null
        */
       function mapStructure(data) {
         const keysOrder = [
-          "theme",
-          "zipped",
-          "id",
-          "updated",
-          "title",
-          "content",
+          HashDataKey.THEME,
+          HashDataKey.ZIPPED,
+          HashDataKey.ID,
+          HashDataKey.UPDATED,
+          HashDataKey.TITLE,
+          HashDataKey.CONTENT,
         ];
 
         let mappedData = null;
@@ -415,30 +481,24 @@
           }, delay);
         };
       }
-      
-      function renderNoteId(value) {
-        if (value) {
-          noteIdSpan.innerHTML = value;
-        }
-      }
-      
-      function renderUpdatedAtDate(value) {
-        if (value) {
-          noteUpdatedAtSpan.innerHTML = (new Date(parseInt(value, 10))).toLocaleString('en-CA', { hour12: false });
-        }
+
+      function getValueFromHash(key) {
+        const storedData = readStoredDataInHash();
+        
+        return storedData?.[key];
       }
 
       function updateDocumentTitle() {
-        document.title = noteTitle.value || 'Note';
+        document.title = noteTitle.value || "Note";
       }
 
       function darkThemeSwitch() {
-        ['dark'].map(v => container.classList.toggle(v, toggle.checked));
+        ["dark"].map(v => container.classList.toggle(v, toggle.checked));
       }
 
       function applySystemTheme() {
         // Set theme based on browser/system preference
-        const prefersDark = matchMedia('(prefers-color-scheme: dark)').matches;
+        const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
         toggle.checked = prefersDark;
         darkThemeSwitch();
       }
@@ -452,9 +512,6 @@
         if (storedData) {
           // Apply initial data from hash on page load
           deserializeAndRenderData(storedData).then(updateDocumentTitle);
-          // render footer block
-          renderNoteId(helper.noteId);
-          renderUpdatedAtDate(storedData["updated"]);
         } else {
           // in case if this is the first launch of the app (if hash is absent)
           applySystemTheme();
@@ -463,12 +520,12 @@
         // Debounced version with delay in milliseconds
         const delayedSerializeDataToHash = debounce(serializeDataToHash, 3000);
         // Bind DOM Events
-        toggle.addEventListener('change', delayedSerializeDataToHash);
-        noteTitle.addEventListener('input', delayedSerializeDataToHash);
-        noteContent.addEventListener('input', delayedSerializeDataToHash);
+        toggle.addEventListener("change", delayedSerializeDataToHash);
+        noteTitle.addEventListener("input", delayedSerializeDataToHash);
+        noteContent.addEventListener("input", delayedSerializeDataToHash);
 
-        toggle.addEventListener('change', darkThemeSwitch);
-        noteTitle.addEventListener('input', updateDocumentTitle);
+        toggle.addEventListener("change", darkThemeSwitch);
+        noteTitle.addEventListener("input", updateDocumentTitle);
       })();
     </script>
   </body>
