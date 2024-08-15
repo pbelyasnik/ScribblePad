@@ -225,7 +225,7 @@
         _escapeSymbol: hashDataEscapeSymbol,
 
         generateId() {
-          this.metadata._noteId = Date.now().toString(); // timestamp, equal to date created
+          return Date.now().toString();
         },
 
         renderNoteId() {
@@ -277,7 +277,7 @@
 
           get noteId() {
             if (Object.is(this._noteId, null)) {
-              helper.generateId();
+              this._noteId = helper.generateId();
             }
 
             return this._noteId;
