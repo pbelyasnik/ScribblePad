@@ -390,12 +390,12 @@
             console.warn("Data compression not supported. Storing data unzipped. ", error);
           }
         }
-        
+
         if (!isDataZipped) {
           encodedTitle = btoa(encodeURIComponent(noteTitle.value));
           encodedContent = btoa(encodeURIComponent(noteContent.value));
         }
-        
+
         writeDataToHash({
           [HashDataKey.TITLE]: encodedTitle,
           [HashDataKey.CONTENT]: encodedContent,
@@ -408,7 +408,7 @@
         helper.storage.actualizeData();
         helper.renderFooterBlock();
       }
-      
+
       async function deserializeAndRenderData(data) {
         // Decode and apply data
         const isThemeDark = parseInt(data[HashDataKey.THEME], 10);
@@ -492,7 +492,7 @@
 
         return mappedData;
       }
-      
+
       // Debounce function
       let timeoutId = null; // Variable to store the timeout reference
       function debounce(func, delay) {
@@ -506,7 +506,7 @@
 
       function getValueFromHash(key) {
         const storedData = readStoredDataInHash();
-        
+
         return storedData?.[key];
       }
 
