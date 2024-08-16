@@ -4,6 +4,20 @@
 
 **ScribblePad** is a minimalist, in-browser note-taking app designed for quick and private note capture. Focus on your ideas without distractions. Enjoy the freedom of a standalone, self-contained note that remains entirely yours.
 
+### How to Use ScribblePad:
+
+**ScribblePad** is designed for effortless use. Follow these simple steps to get started:
+
+1. **Obtain the Code:** Copy the entire contents of the `src/app.min.html` file.
+1. **Create a Bookmarklet:**
+    - Access your browser's bookmark manager.
+    - Create a new bookmark.
+    - Give it a name like "ScribblePad".
+    - Paste the copied code into the URL field.
+1. **Start Taking Notes:** Click on the newly created bookmarklet to open a new tab with your ScribblePad.
+
+That's it! You're ready to start jotting down your thoughts and ideas.
+
 ### Features:
 
 - **Ultimate Privacy:** Your notes are stored solely within your browser, ensuring complete control over your data. No external servers or third-party involvement.
