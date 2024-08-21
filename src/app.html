@@ -176,6 +176,13 @@
       body {
         margin: 0;
       }
+
+      /* Workaround for Firefox (Gecko) */
+      @-moz-document url-prefix() {
+        .container {
+          margin-top: -3px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -464,7 +471,12 @@
 
         const hashData = mapStructure(data).join(hashDataDelimiterSymbol);
 
-        history.replaceState(undefined, "", hashSymbol + hashData);
+        try {
+          history.replaceState(undefined, "", hashSymbol + hashData);
+        } catch (_) {
+          // Workaround for Firefox (Gecko) for data URI scheme
+          window.location.hash = hashData;
+        }
       }
 
       /**
