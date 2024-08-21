@@ -33,3 +33,18 @@ That's it! You're ready to start jotting down your thoughts and ideas.
 - **Standalone Notes:** Notes are isolated to individual browser sessions and cannot be synced across devices.
 - **Basic Formatting:** ScribblePad focuses on plain text simplicity, offering no advanced formatting options.
 - **No Version History:** While browser history can be used to track changes (by searching for your note ID), ScribblePad does not provide built-in version control.
+
+### Troubleshooting:
+
+If you encounter any issues with ScribblePad, try the following steps:
+
+1. **Clear Browser Cache and Data:** Sometimes, browser cache or data can interfere with web applications. Clearing your browser's cache and data might resolve the problem.
+1. **Check Browser Compatibility:** ScribblePad is primarily designed for Chrome and Firefox. Ensure you're using a supported browser.
+1. **Verify Code Integrity:** Double-check that you have copied the entire contents correctly.
+1. **Use the lite version of the app:** Employing the `src/app.version.lite.min.html` file instead of `src/app.min.html` may be advantageous if your browser faces limitations with long URLs (approximately 2,000 characters). This smaller file size can mitigate potential issues arising from URL length restrictions.
+
+### Screenshots:
+
+Light and Dark themes of the application:
+
+<img src="./screenshots/theme-white.png" width="48%"/> <img src="./screenshots/theme-dark.png" width="48%"/>
