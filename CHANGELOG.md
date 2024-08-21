@@ -31,3 +31,9 @@
 
 - Bug fix:
     - Resolved issue with dark theme toggle inadvertently updating note modification datetime.
+
+### [0.1.6]
+
+- Bug fix (related to the Gecko rendering engine):
+    - Resolved issue with visual display mismatch in Firefox browser.
+    - Resolved issue with saving data in Firefox browser.
