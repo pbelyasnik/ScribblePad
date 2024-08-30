@@ -47,4 +47,15 @@ If you encounter any issues with ScribblePad, try the following steps:
 
 Light and Dark themes of the application:
 
-<img src="./screenshots/theme-white.png" width="48%"/> <img src="./screenshots/theme-dark.png" width="48%"/>
+<img src="./screenshots/mobile-horizontal-theme-light.jpg"/>
+<img src="./screenshots/mobile-horizontal-theme-dark.jpg"/>
+
+<details>
+  <summary>Screenshots from mobile device (click to preview)</summary>
+  <img src="./screenshots/mobile-vertical-theme-light.jpg" width="48%"/> <img src="./screenshots/mobile-vertical-theme-dark.jpg" width="48%"/>
+</details>
+
+<details>
+  <summary>Screenshots from desktop browser (click to preview)</summary>
+  <img src="./screenshots/desktop-theme-white.png" width="48%"/> <img src="./screenshots/desktop-theme-dark.png" width="48%"/>
+</details>
