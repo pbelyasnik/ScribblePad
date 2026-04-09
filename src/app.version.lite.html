@@ -4,14 +4,22 @@
       (() => {
         const url = "https://raw.githubusercontent.com/pbelyasnik/scribblepad/master/src/app.min.html";
         fetch(url).then(async (response) => {
-          // HTML content substitution
-          const htmlString = await response.text();
-          document.querySelector('html').innerHTML = htmlString.replace('data:text/html,', '').replaceAll(/<[\/]?html>/g, '');
+          document.open();
+          document.write(await response.text());
+          document.close();
+        });
 
-          // Handle scripts in the fetched HTML
-          const scripts = document.querySelectorAll('script');
-          scripts.forEach(script => eval(script.textContent));
-        })
+        // old version, left for history:
+        //
+        // fetch(url).then(async (response) => {
+        //   // HTML content substitution
+        //   const htmlString = await response.text();
+        //   document.querySelector('html').innerHTML = htmlString.replace('data:text/html,', '').replaceAll(/<[\/]?html>/g, '');
+        //
+        //   // Handle scripts in the fetched HTML
+        //   const scripts = document.querySelectorAll('script');
+        //   scripts.forEach(script => eval(script.textContent));
+        // })
       })();
     </script>
   </body>
